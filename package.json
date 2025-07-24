@@ -2,15 +2,27 @@
   "private": true,
   "name": "lucra-lance-monorepo",
   "version": "1.0.0",
-  "workspaces": ["api", "web"],
+  "workspaces": [
+    "api",
+    "web"
+  ],
   "scripts": {
     "dev:api": "npm --workspace api start",
-    "dev:web": "npm --workspace web dev",
-    "build:web": "npm --workspace web build",
+    "dev:web": "npm --workspace web run dev",
+    "build:web": "npm --workspace web run build",
     "lint": "eslint . --ext .js,.ts,.tsx"
   },
   "devDependencies": {
     "eslint": "^8.x",
+    "lovable-tagger": "^1.1.8",
     "prettier": "^3.x"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.0",
+    "express": "^5.1.0",
+    "openai": "^5.10.2",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2"
   }
 }

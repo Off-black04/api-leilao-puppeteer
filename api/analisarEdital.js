@@ -1,37 +1,40 @@
-import pdfParse from "pdf-parse";
+// api/analisarEdital.js
+import {
+  extrairDadosEditalHTML,
+  extrairDadosEditalPDF,
+} from "./scraperEdital.js";
+import { analisarImovelComGPT } from "./analisarViaOpenAI.js";
 
-export async function extrairDadosDoPdf(buffer) {
-  try {
-    const data = await pdfParse(buffer);
-    const texto = data.text;
+/**
+ * Dado o caminho do arquivo e seu MIME type, extrai
+ * os dados do edital e gera o relatório via GPT.
+ *
+ * @param {string} filePath – caminho temporário do arquivo
+ * @param {string} mimeType – tipo MIME do arquivo (application/pdf ou text/html)
+ * @returns {Promise<Object>} – objeto com todos os campos extraídos + relatorio
+ */
+export async function analisarEdital(filePath, mimeType) {
+  let dados;
 
-    // Aqui você pode personalizar as extrações com regex
-    const titulo = (texto.match(/(IMÓVEL.*?)\n/) || [])[1] || "Título não encontrado";
-    const endereco = (texto.match(/Endereço:(.*)/i) || [])[1]?.trim() || "";
-    const cidade = (texto.match(/Cidade:(.*)/i) || [])[1]?.trim() || "";
-    const estado = (texto.match(/UF:(.*)/i) || [])[1]?.trim() || "";
-    const avaliacao = (texto.match(/Avaliação:.*?([\d.,]+)/i) || [])[1] || "";
-    const lanceMinimo = (texto.match(/Lance (Inicial|Mínimo):.*?([\d.,]+)/i) || [])[2] || "";
-    const dataLeilao = (texto.match(/Data do Leilão: (.*)/i) || [])[1]?.trim() || "";
-    const tipo = (texto.match(/Tipo do Imóvel:(.*)/i) || [])[1]?.trim() || "";
-    const ocupacao = (texto.match(/Ocupação:(.*)/i) || [])[1]?.trim() || "";
-
-    return {
-      titulo,
-      endereco,
-      cidade,
-      estado,
-      avaliacao,
-      lanceMinimo,
-      dataLeilao,
-      tipo,
-      ocupacao,
-      status: "Em análise",
-      score: 0,
-      link: null
-    };
-  } catch (err) {
-    console.error("Erro ao ler PDF:", err);
-    return { erro: "Não foi possível extrair dados do PDF" };
+  // 1) Extrai campos conforme o tipo
+  if (mimeType === "application/pdf") {
+    dados = await extrairDadosEditalPDF(filePath);
+  } else {
+    dados = await extrairDadosEditalHTML(filePath);
   }
+
+  // 2) Gera relatório via OpenAI
+  let relatorio;
+  try {
+    relatorio = await analisarImovelComGPT(dados);
+  } catch (err) {
+    console.warn(
+      "⚠️ Falha ao gerar relatório via GPT, usando fallback:",
+      err.message
+    );
+    relatorio = "RELATÓRIO DUMMY: Extração concluída com sucesso.";
+  }
+
+  // 3) Retorna combinação de dados e relatório
+  return { ...dados, relatorio };
 }

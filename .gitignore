@@ -1,5 +1,8 @@
-﻿node_modules/
+﻿# Ignorar dependências de node
+node_modules/
 **/node_modules/
+
+# Ignorar arquivos de ambiente
 .env
 api/.env
 web/.env.local

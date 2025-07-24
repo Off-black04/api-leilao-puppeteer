@@ -1,59 +1,149 @@
 <!DOCTYPE html>
-<html lang="pt‑BR">
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <title>Teste de Análise de Imóvel</title>
+  <title>Teste de Análise de Edital</title>
   <style>
     body { font-family: sans-serif; padding: 2rem; }
-    input { width: 100%; padding: .5rem; margin-bottom: 1rem; }
-    button { padding: .5rem 1rem; }
+    .tabs { margin-bottom: 1rem; }
+    .tab {
+      display: inline-block;
+      padding: .5rem 1rem;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      border-bottom: none;
+      border-radius: 4px 4px 0 0;
+      margin-right: .25rem;
+      background: #f5f5f5;
+    }
+    .tab.active { background: white; font-weight: bold; }
+    .panel {
+      border: 1px solid #ccc;
+      padding: 1rem;
+      border-radius: 0 4px 4px 4px;
+      background: white;
+    }
+    input, button { padding: .5rem; font-size: 1rem; }
+    input[type="file"] { padding: .25rem; }
     .card {
       border: 1px solid #ddd; border-radius: 8px;
       padding: 1rem; margin-top: 1rem;
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
-    .card h2 { margin-top: 0; }
     .field { margin-bottom: .5rem; }
     .label { font-weight: bold; }
   </style>
 </head>
 <body>
-  <h1>Teste de Análise de Imóvel</h1>
-  <input id="linkInput" value="https://www.portalzuk.com.br/imovel/mg/belo-horizonte/planalto/rua-risoleta-pinto-sardinha-750/33641-206348" />
-  <button id="btnAnalisar">Analisar Imóvel</button>
+  <h1>Teste de Análise de Edital</h1>
+
+  <div class="tabs">
+    <div id="tab-url" class="tab">Por URL</div>
+    <div id="tab-upload" class="tab active">Por Upload</div>
+  </div>
+
+  <div id="panel-url" class="panel" style="display:none;">
+    <input id="urlInput" placeholder="Cole a URL do edital" />
+    <button id="btnUrl">Extrair via URL</button>
+  </div>
+
+  <div id="panel-upload" class="panel">
+    <input type="file" id="fileInput" accept=".pdf,.html" />
+    <button id="btnUpload">Extrair via Upload</button>
+  </div>
 
   <div id="resultado"></div>
 
   <script>
-    document.getElementById('btnAnalisar').addEventListener('click', async () => {
-      const link = document.getElementById('linkInput').value;
-      const container = document.getElementById('resultado');
-      container.innerHTML = '<p>Carregando…</p>';
+    // Abas
+    const tabUrl = document.getElementById('tab-url');
+    const tabUpload = document.getElementById('tab-upload');
+    const panelUrl = document.getElementById('panel-url');
+    const panelUpload = document.getElementById('panel-upload');
+
+    function selectTab(tab) {
+      if (tab === 'url') {
+        tabUrl.classList.add('active');
+        tabUpload.classList.remove('active');
+        panelUrl.style.display = '';
+        panelUpload.style.display = 'none';
+      } else {
+        tabUpload.classList.add('active');
+        tabUrl.classList.remove('active');
+        panelUpload.style.display = '';
+        panelUrl.style.display = 'none';
+      }
+      document.getElementById('resultado').innerHTML = '';
+    }
+
+    tabUrl.addEventListener('click', () => selectTab('url'));
+    tabUpload.addEventListener('click', () => selectTab('upload'));
+
+    // Result container
+    const container = document.getElementById('resultado');
+
+    // Função para renderizar o resultado
+    function renderResult(data) {
+      container.innerHTML = `
+        <div class="card">
+          ${data.numeroProcesso ? `<div class="field"><span class="label">Processo:</span> ${data.numeroProcesso}</div>` : ''}
+          ${data.modalidade ? `<div class="field"><span class="label">Modalidade:</span> ${data.modalidade}</div>` : ''}
+          ${data.dataPublicacao ? `<div class="field"><span class="label">Publicação:</span> ${data.dataPublicacao}</div>` : ''}
+          ${data.dataLeilao ? `<div class="field"><span class="label">Data Leilão:</span> ${data.dataLeilao}</div>` : ''}
+          ${data.valorCausa ? `<div class="field"><span class="label">Valor da Causa:</span> ${data.valorCausa}</div>` : ''}
+          ${data.juiz ? `<div class="field"><span class="label">Juiz:</span> ${data.juiz}</div>` : ''}
+          ${data.endereco ? `<div class="field"><span class="label">Endereço:</span> ${data.endereco}</div>` : ''}
+          <hr/>
+          <pre>${data.textoCompletoEdital || ''}</pre>
+          <hr/>
+          <h3>Relatório</h3>
+          <pre>${data.relatorio || ''}</pre>
+        </div>
+      `;
+    }
+
+    // Upload
+    document.getElementById('btnUpload').addEventListener('click', async () => {
+      const fileInput = document.getElementById('fileInput');
+      if (!fileInput.files.length) {
+        alert('Selecione um arquivo PDF ou HTML');
+        return;
+      }
+      const form = new FormData();
+      form.append('edital', fileInput.files[0]);
+
+      container.innerHTML = '<p>Extraindo…</p>';
 
       try {
-        const res = await fetch('http://localhost:3001/analisar-link', {
+        const res = await fetch('http://localhost:3001/upload-edital', {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ link })
+          body: form
         });
         const data = await res.json();
+        if (data.erro) throw new Error(data.erro);
+        renderResult(data);
+      } catch (err) {
+        container.innerHTML = `<p style="color:red">Erro: ${err.message}</p>`;
+      }
+    });
 
-        // Monta o card de resultado
-        container.innerHTML = `
-          <div class="card">
-            <h2>${data.titulo}</h2>
-            <div class="field"><span class="label">Endereço:</span> ${data.endereco}, ${data.bairro}, ${data.cidade} – ${data.estado}</div>
-            <div class="field"><span class="label">Tipo:</span> ${data.tipo}</div>
-            <div class="field"><span class="label">Ocupação:</span> ${data.ocupacao}</div>
-            <div class="field"><span class="label">Lance Mínimo:</span> ${data.lanceMinimo}</div>
-            <div class="field"><span class="label">Avaliação:</span> ${data.avaliacao}</div>
-            <div class="field"><span class="label">Data do Leilão:</span> ${data.dataLeilao}</div>
-            <div class="field"><span class="label">Score:</span> ${data.score}</div>
-            <hr/>
-            <pre>${data.relatorio}</pre>
-            <p><a href="${data.link}" target="_blank">Ver anúncio original</a></p>
-          </div>
-        `;
+    // URL (se quiser manter futuramente)
+    document.getElementById('btnUrl').addEventListener('click', async () => {
+      const link = document.getElementById('urlInput').value.trim();
+      if (!link) {
+        alert('Cole a URL do edital');
+        return;
+      }
+      container.innerHTML = '<p>Extraindo via URL…</p>';
+      try {
+        const res = await fetch('http://localhost:3001/upload-edital', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: link })
+        });
+        const data = await res.json();
+        if (data.erro) throw new Error(data.erro);
+        renderResult(data);
       } catch (err) {
         container.innerHTML = `<p style="color:red">Erro: ${err.message}</p>`;
       }
