@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt‑BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teste de Análise de Imóvel</title>
+  <style>
+    body { font-family: sans-serif; padding: 2rem; }
+    input { width: 100%; padding: .5rem; margin-bottom: 1rem; }
+    button { padding: .5rem 1rem; }
+    .card {
+      border: 1px solid #ddd; border-radius: 8px;
+      padding: 1rem; margin-top: 1rem;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .card h2 { margin-top: 0; }
+    .field { margin-bottom: .5rem; }
+    .label { font-weight: bold; }
+  </style>
+</head>
+<body>
+  <h1>Teste de Análise de Imóvel</h1>
+  <input id="linkInput" value="https://www.portalzuk.com.br/imovel/mg/belo-horizonte/planalto/rua-risoleta-pinto-sardinha-750/33641-206348" />
+  <button id="btnAnalisar">Analisar Imóvel</button>
+
+  <div id="resultado"></div>
+
+  <script>
+    document.getElementById('btnAnalisar').addEventListener('click', async () => {
+      const link = document.getElementById('linkInput').value;
+      const container = document.getElementById('resultado');
+      container.innerHTML = '<p>Carregando…</p>';
+
+      try {
+        const res = await fetch('http://localhost:3001/analisar-link', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ link })
+        });
+        const data = await res.json();
+
+        // Monta o card de resultado
+        container.innerHTML = `
+          <div class="card">
+            <h2>${data.titulo}</h2>
+            <div class="field"><span class="label">Endereço:</span> ${data.endereco}, ${data.bairro}, ${data.cidade} – ${data.estado}</div>
+            <div class="field"><span class="label">Tipo:</span> ${data.tipo}</div>
+            <div class="field"><span class="label">Ocupação:</span> ${data.ocupacao}</div>
+            <div class="field"><span class="label">Lance Mínimo:</span> ${data.lanceMinimo}</div>
+            <div class="field"><span class="label">Avaliação:</span> ${data.avaliacao}</div>
+            <div class="field"><span class="label">Data do Leilão:</span> ${data.dataLeilao}</div>
+            <div class="field"><span class="label">Score:</span> ${data.score}</div>
+            <hr/>
+            <pre>${data.relatorio}</pre>
+            <p><a href="${data.link}" target="_blank">Ver anúncio original</a></p>
+          </div>
+        `;
+      } catch (err) {
+        container.innerHTML = `<p style="color:red">Erro: ${err.message}</p>`;
+      }
+    });
+  </script>
+</body>
+</html>

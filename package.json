@@ -1,0 +1,16 @@
+{
+  "private": true,
+  "name": "lucra-lance-monorepo",
+  "version": "1.0.0",
+  "workspaces": ["api", "web"],
+  "scripts": {
+    "dev:api": "npm --workspace api start",
+    "dev:web": "npm --workspace web dev",
+    "build:web": "npm --workspace web build",
+    "lint": "eslint . --ext .js,.ts,.tsx"
+  },
+  "devDependencies": {
+    "eslint": "^8.x",
+    "prettier": "^3.x"
+  }
+}
